@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="preview.png" alt="Pi Model Manager Screenshot" width="850">
+  <img src="preview_v2.png" alt="Pi Model Manager Screenshot" width="850">
 </p>
 
 ---

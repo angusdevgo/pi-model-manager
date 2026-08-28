@@ -676,32 +676,33 @@ HTML_CONTENT = """<!DOCTYPE html>
   .input:focus { border-color: #60A5FA; box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2); }
   select.input { cursor: pointer; }
 
-  .models-tag-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 200px; overflow-y: auto; padding: 12px; background: rgba(11, 17, 32, 0.45); border-radius: 9px; border: 1px solid var(--glass-border); }
-  .model-tag { display: inline-flex; align-items: center; gap: 6px; background: rgba(51, 65, 85, 0.65); border: 1px solid var(--glass-border); border-radius: 7px; padding: 4px 10px; font-size: 12px; backdrop-filter: blur(6px); transition: all 0.15s; }
-  .model-tag:hover { background: rgba(71, 85, 105, 0.85); border-color: rgba(255,255,255,0.15); }
-  .model-tag .del-btn { cursor: pointer; color: var(--text-muted); font-size: 14px; }
-  .model-tag .del-btn:hover { color: var(--rose); }
-  .model-tag .alias-input { background: transparent; border: none; border-bottom: 1px dashed transparent; color: var(--emerald); font-size: 12px; width: 90px; padding: 1px 3px; outline: none; font-family: inherit; }
-  .model-tag .alias-input:hover { border-bottom-color: var(--glass-border); }
-  .model-tag .alias-input:focus { border-bottom-color: var(--primary); color: #fff; background: rgba(0,0,0,0.25); }
-  .model-tag .alias-id { color: var(--text-muted); font-size: 11px; }
+  .models-tag-container { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding: 12px; background: rgba(11, 17, 32, 0.45); border-radius: 9px; border: 1px solid var(--glass-border); }
+  .model-tag { display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, rgba(51, 65, 85, 0.6), rgba(30, 41, 59, 0.75)); border: 1px solid var(--glass-border); border-radius: 8px; padding: 5px 12px; font-size: 12px; backdrop-filter: blur(6px); transition: all 0.2s ease; }
+  .model-tag:hover { border-color: rgba(96, 165, 250, 0.4); background: linear-gradient(135deg, rgba(51, 65, 85, 0.8), rgba(37, 51, 79, 0.85)); transform: translateX(3px); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+  .model-tag .alias-icon { font-size: 11px; flex-shrink: 0; opacity: 0.75; }
+  .model-tag .alias-input { background: transparent; border: 1px dashed transparent; border-radius: 5px; color: var(--emerald); font-size: 12.5px; font-weight: 600; width: 170px; padding: 2px 6px; outline: none; font-family: inherit; transition: all 0.15s; }
+  .model-tag .alias-input:hover { border-color: var(--glass-border); background: rgba(11, 17, 32, 0.4); }
+  .model-tag .alias-input:focus { border-color: #60A5FA; background: rgba(11, 17, 32, 0.65); box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.18); }
+  .model-tag .alias-id { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 11px; color: #94A3B8; flex-shrink: 0; background: rgba(11, 17, 32, 0.35); padding: 1px 6px; border-radius: 4px; }
+  .model-tag .del-btn { cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 0 3px; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
+  .model-tag .del-btn:hover { color: #fff; background: rgba(244, 63, 94, 0.35); }
 
-  .fetch-preview-container { display: none; margin-top: 14px; padding: 12px; background: rgba(15, 23, 42, 0.55); border-radius: 10px; border: 1px solid rgba(96, 165, 250, 0.35); }
-  .fetch-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .fetch-preview-header .title { color: var(--primary); font-size: 13px; font-weight: 600; }
-  .fetch-preview-header .actions { display: flex; gap: 8px; }
-  .fetch-preview-header .actions .btn { padding: 4px 10px; font-size: 12px; }
-  .fetch-preview-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
-  .fetch-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--glass-border); border-radius: 7px; transition: all 0.15s; }
-  .fetch-row:hover { background: rgba(51, 65, 85, 0.6); border-color: rgba(96, 165, 250, 0.3); }
+  .fetch-preview-container { display: none; margin-top: 14px; padding: 14px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.65)); border-radius: 11px; border: 1px solid rgba(96, 165, 250, 0.4); box-shadow: 0 0 20px rgba(96, 165, 250, 0.1); }
+  .fetch-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
+  .fetch-preview-header .title { background: linear-gradient(90deg, #60A5FA, #818CF8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-size: 13.5px; font-weight: 700; }
+  .fetch-preview-header .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .fetch-preview-header .actions .btn { padding: 4px 11px; font-size: 12px; border-radius: 6px; }
+  .fetch-preview-list { display: flex; flex-direction: column; gap: 6px; max-height: 240px; overflow-y: auto; }
+  .fetch-row { display: flex; align-items: center; gap: 10px; padding: 6px 11px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--glass-border); border-radius: 8px; transition: all 0.15s; }
+  .fetch-row:hover { background: rgba(51, 65, 85, 0.65); border-color: rgba(96, 165, 250, 0.35); }
   .fetch-row.added { opacity: 0.45; }
   .fetch-row .checkbox { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary); }
-  .fetch-row .model-id { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: var(--emerald); min-width: 160px; flex-shrink: 0; }
-  .fetch-row .alias-input { flex: 1; background: rgba(11, 17, 32, 0.6); border: 1px solid var(--glass-border); border-radius: 5px; color: #fff; font-size: 12px; padding: 4px 8px; outline: none; font-family: inherit; }
-  .fetch-row .alias-input:focus { border-color: var(--primary); }
+  .fetch-row .model-id { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: var(--emerald); min-width: 170px; flex-shrink: 0; }
+  .fetch-row .alias-input { flex: 1; background: rgba(11, 17, 32, 0.6); border: 1px solid var(--glass-border); border-radius: 6px; color: #fff; font-size: 12px; padding: 4px 9px; outline: none; font-family: inherit; transition: border-color 0.15s; }
+  .fetch-row .alias-input:focus { border-color: #60A5FA; box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.15); }
   .fetch-row .alias-input::placeholder { color: var(--text-muted); }
-  .fetch-row .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: var(--emerald); flex-shrink: 0; }
-  .fetch-summary { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .fetch-row .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 5px; background: rgba(16, 185, 129, 0.15); color: var(--emerald); flex-shrink: 0; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .fetch-summary { font-size: 12px; color: var(--text-muted); margin-bottom: 9px; padding: 6px 10px; background: rgba(11, 17, 32, 0.35); border-radius: 6px; }
 
   footer { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); padding: 7px 20px; font-size: 12px; color: var(--emerald); display: flex; justify-content: space-between; }
 </style>
@@ -787,16 +788,16 @@ HTML_CONTENT = """<!DOCTYPE html>
         <button class="btn btn-primary edit-action" onclick="addModelManual()">➕ 添加模型</button>
       </div>
       <div class="models-tag-container" id="modelsContainer">
-        <span style="color: var(--text-muted); font-size: 13px;">暂无模型，可点击上方「自动拉取模型」或手动添加。可双击模型别名进行修改</span>
+        <span style="color: var(--text-muted); font-size: 13px;">暂无模型，可点击上方「自动拉取模型」或手动添加。别名可直接点击修改</span>
       </div>
       <div class="fetch-preview-container" id="fetchPreviewContainer">
         <div class="fetch-preview-header">
-          <span class="title">📥 拉取结果预览 (尚未加入列表，可在此设置别名)</span>
+          <span class="title">📥 拉取结果预览 — 勾选后点击「添加选中」才写入列表，可先设置别名</span>
           <div class="actions">
             <button class="btn btn-emerald edit-action" onclick="commitFetchedModels()">✅ 添加选中到列表</button>
-            <button class="btn edit-action" onclick="toggleAllFetched(true)">全选</button>
-            <button class="btn edit-action" onclick="toggleAllFetched(false)">全不选</button>
-            <button class="btn edit-action" onclick="closeFetchPreview()">关闭预览</button>
+            <button class="btn edit-action" onclick="toggleAllFetched(true)">☑ 全选</button>
+            <button class="btn edit-action" onclick="toggleAllFetched(false)">☐ 全不选</button>
+            <button class="btn edit-action" onclick="closeFetchPreview()">✕ 关闭</button>
           </div>
         </div>
         <div class="fetch-summary" id="fetchSummary"></div>
@@ -931,25 +932,22 @@ function renderModels(models) {
   const container = document.getElementById('modelsContainer');
   container.innerHTML = '';
   if (!models || models.length === 0) {
-    container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">暂无模型，点击「自动拉取模型」或手动添加。可双击模型别名进行修改</span>';
+    container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">暂无模型，点击「自动拉取模型」或手动添加。别名可直接点击修改</span>';
     return;
   }
   models.forEach(m => {
     const tag = document.createElement('div');
     tag.className = 'model-tag';
-    const hasAlias = m.name && m.name !== m.id;
-    // Inline editable alias + ID; double click alias to edit
     const alias = m.name || m.id;
     const safeId = String(m.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
     const safeAlias = String(alias).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     tag.innerHTML = `
-      <input class="alias-input" type="text" value="${safeAlias}" placeholder="别名"
-             ondblclick="this.removeAttribute('readonly')" readonly
-             onchange="updateModelAlias('${safeId}', this.value)"
-             onblur="if(this.value.trim()===''){this.value='${safeId}'; updateModelAlias('${safeId}', '${safeId}');}"
-             title="双击可编辑别名">
-      <span class="alias-id">(${safeId})</span>
-      <span class="del-btn" onclick="removeModel('${safeId}')" title="删除该模型">×</span>
+      <span class="alias-icon">✏️</span>
+      <input class="alias-input" type="text" value="${safeAlias}" placeholder="${safeId}"
+             title="点击直接修改别名，回车或失焦自动保存"
+             onchange="updateModelAlias('${safeId}', this.value)">
+      <span class="alias-id">${safeId}</span>
+      <span class="del-btn" onclick="removeModel('${safeId}')" title="删除该模型">✕</span>
     `;
     container.appendChild(tag);
   });
@@ -1040,6 +1038,9 @@ function addModelManual() {
   document.getElementById('newModelName').value = '';
   renderModels(p.models);
   renderSidebar();
+  // 连续添加时自动聚焦到模型 ID 输入框
+  document.getElementById('newModelId').focus();
+  setStatus(`已添加模型 [${mid}]，点击「💾 保存」持久化`, '#10B981');
 }
 
 function removeModel(mid) {
@@ -1149,15 +1150,16 @@ function commitFetchedModels() {
   renderSidebar();
   renderFetchPreview();
   if (addedCount > 0) {
-    setStatus(`已将 ${addedCount} 个模型添加到 [${pid}] 列表。点击「💾 保存」即可持久化`, '#10B981');
+    setStatus(`✅ 已将 ${addedCount} 个模型添加到 [${pid}] 列表。点击「💾 保存」即可持久化`, '#10B981');
   } else {
-    setStatus('没有选中可添加的模型', '#F59E0B');
+    setStatus('没有选中可添加的模型，请先勾选', '#F59E0B');
   }
 }
 
 function closeFetchPreview() {
   fetchedPreview = [];
-  document.getElementById('fetchPreviewContainer').style.display = 'none';
+  const c = document.getElementById('fetchPreviewContainer');
+  if (c) c.style.display = 'none';
 }
 
 

@@ -681,6 +681,27 @@ HTML_CONTENT = """<!DOCTYPE html>
   .model-tag:hover { background: rgba(71, 85, 105, 0.85); border-color: rgba(255,255,255,0.15); }
   .model-tag .del-btn { cursor: pointer; color: var(--text-muted); font-size: 14px; }
   .model-tag .del-btn:hover { color: var(--rose); }
+  .model-tag .alias-input { background: transparent; border: none; border-bottom: 1px dashed transparent; color: var(--emerald); font-size: 12px; width: 90px; padding: 1px 3px; outline: none; font-family: inherit; }
+  .model-tag .alias-input:hover { border-bottom-color: var(--glass-border); }
+  .model-tag .alias-input:focus { border-bottom-color: var(--primary); color: #fff; background: rgba(0,0,0,0.25); }
+  .model-tag .alias-id { color: var(--text-muted); font-size: 11px; }
+
+  .fetch-preview-container { display: none; margin-top: 14px; padding: 12px; background: rgba(15, 23, 42, 0.55); border-radius: 10px; border: 1px solid rgba(96, 165, 250, 0.35); }
+  .fetch-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .fetch-preview-header .title { color: var(--primary); font-size: 13px; font-weight: 600; }
+  .fetch-preview-header .actions { display: flex; gap: 8px; }
+  .fetch-preview-header .actions .btn { padding: 4px 10px; font-size: 12px; }
+  .fetch-preview-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .fetch-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--glass-border); border-radius: 7px; transition: all 0.15s; }
+  .fetch-row:hover { background: rgba(51, 65, 85, 0.6); border-color: rgba(96, 165, 250, 0.3); }
+  .fetch-row.added { opacity: 0.45; }
+  .fetch-row .checkbox { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: var(--primary); }
+  .fetch-row .model-id { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 12px; color: var(--emerald); min-width: 160px; flex-shrink: 0; }
+  .fetch-row .alias-input { flex: 1; background: rgba(11, 17, 32, 0.6); border: 1px solid var(--glass-border); border-radius: 5px; color: #fff; font-size: 12px; padding: 4px 8px; outline: none; font-family: inherit; }
+  .fetch-row .alias-input:focus { border-color: var(--primary); }
+  .fetch-row .alias-input::placeholder { color: var(--text-muted); }
+  .fetch-row .status-badge { font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: var(--emerald); flex-shrink: 0; }
+  .fetch-summary { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 
   footer { background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(16px); border-top: 1px solid var(--glass-border); padding: 7px 20px; font-size: 12px; color: var(--emerald); display: flex; justify-content: space-between; }
 </style>
@@ -762,11 +783,24 @@ HTML_CONTENT = """<!DOCTYPE html>
       </div>
       <div style="display: flex; gap: 10px; margin-bottom: 12px;">
         <input class="input" id="newModelId" placeholder="模型 ID (如: deepseek-chat)" style="flex: 1;">
-        <input class="input" id="newModelName" placeholder="显示名称 (可选)" style="flex: 1;">
+        <input class="input" id="newModelName" placeholder="显示名称 / 别名 (可选)" style="flex: 1;">
         <button class="btn btn-primary edit-action" onclick="addModelManual()">➕ 添加模型</button>
       </div>
       <div class="models-tag-container" id="modelsContainer">
-        <span style="color: var(--text-muted); font-size: 13px;">暂无模型，可点击上方「自动拉取模型」或手动添加</span>
+        <span style="color: var(--text-muted); font-size: 13px;">暂无模型，可点击上方「自动拉取模型」或手动添加。可双击模型别名进行修改</span>
+      </div>
+      <div class="fetch-preview-container" id="fetchPreviewContainer">
+        <div class="fetch-preview-header">
+          <span class="title">📥 拉取结果预览 (尚未加入列表，可在此设置别名)</span>
+          <div class="actions">
+            <button class="btn btn-emerald edit-action" onclick="commitFetchedModels()">✅ 添加选中到列表</button>
+            <button class="btn edit-action" onclick="toggleAllFetched(true)">全选</button>
+            <button class="btn edit-action" onclick="toggleAllFetched(false)">全不选</button>
+            <button class="btn edit-action" onclick="closeFetchPreview()">关闭预览</button>
+          </div>
+        </div>
+        <div class="fetch-summary" id="fetchSummary"></div>
+        <div class="fetch-preview-list" id="fetchPreviewList"></div>
       </div>
     </div>
   </div>
@@ -784,6 +818,7 @@ let configTargets = [];
 let currentConfigPath = null;
 let currentEditable = true;
 let currentSchema = 'pi-providers';
+let fetchedPreview = []; // Buffer of {id, name, selected, added}
 
 async function refreshTargets(keepPath = true) {
   setStatus('正在加载 Pi Agent 配置文件...', '#F59E0B');
@@ -821,6 +856,9 @@ async function loadData(path = currentConfigPath) {
   currentConfigPath = data.path;
   currentEditable = data.editable !== false;
   currentSchema = data.schema || 'unknown';
+  fetchedPreview = []; // clear buffer when reloading data
+  const fpContainer = document.getElementById('fetchPreviewContainer');
+  if (fpContainer) fpContainer.style.display = 'none';
   document.getElementById('pathDisplay').innerText = `📁 当前配置: ${data.path}`;
   updateEditState();
   renderSidebar();
@@ -876,6 +914,9 @@ function renderSidebar() {
 
 function selectProvider(pid) {
   selectedPid = pid;
+  fetchedPreview = []; // clear buffer when switching providers
+  const fpContainer = document.getElementById('fetchPreviewContainer');
+  if (fpContainer) fpContainer.style.display = 'none';
   renderSidebar();
   const p = currentConfig.providers[pid] || {};
   document.getElementById('pId').value = pid;
@@ -890,16 +931,47 @@ function renderModels(models) {
   const container = document.getElementById('modelsContainer');
   container.innerHTML = '';
   if (!models || models.length === 0) {
-    container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">暂无模型，点击「自动拉取模型」或手动添加</span>';
+    container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px;">暂无模型，点击「自动拉取模型」或手动添加。可双击模型别名进行修改</span>';
     return;
   }
   models.forEach(m => {
     const tag = document.createElement('div');
     tag.className = 'model-tag';
-    tag.innerHTML = `<span>${m.name && m.name !== m.id ? m.name + ' (' + m.id + ')' : m.id}</span><span class="del-btn" onclick="removeModel('${m.id}')">×</span>`;
+    const hasAlias = m.name && m.name !== m.id;
+    // Inline editable alias + ID; double click alias to edit
+    const alias = m.name || m.id;
+    const safeId = String(m.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeAlias = String(alias).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    tag.innerHTML = `
+      <input class="alias-input" type="text" value="${safeAlias}" placeholder="别名"
+             ondblclick="this.removeAttribute('readonly')" readonly
+             onchange="updateModelAlias('${safeId}', this.value)"
+             onblur="if(this.value.trim()===''){this.value='${safeId}'; updateModelAlias('${safeId}', '${safeId}');}"
+             title="双击可编辑别名">
+      <span class="alias-id">(${safeId})</span>
+      <span class="del-btn" onclick="removeModel('${safeId}')" title="删除该模型">×</span>
+    `;
     container.appendChild(tag);
   });
 }
+
+function updateModelAlias(mid, newAlias) {
+  if (!assertEditable()) return;
+  const pid = syncCurrentFormToMemory();
+  if (!pid) return;
+  const p = currentConfig.providers[pid];
+  if (!p || !p.models) return;
+  const trimmed = String(newAlias || '').trim();
+  const m = p.models.find(x => x.id === mid);
+  if (!m) return;
+  if (!trimmed || trimmed === mid) {
+    delete m.name;
+  } else {
+    m.name = trimmed;
+  }
+  renderSidebar();
+}
+
 
 function normalizeProviderId(raw) {
   return String(raw || '').trim().replace(/[^A-Za-z0-9_.-]+/g, '-');
@@ -938,6 +1010,9 @@ function syncCurrentFormToMemory() {
 function newProvider(skipEditableCheck = false) {
   if (!skipEditableCheck && !assertEditable()) return;
   selectedPid = null;
+  fetchedPreview = [];
+  const fpContainer = document.getElementById('fetchPreviewContainer');
+  if (fpContainer) fpContainer.style.display = 'none';
   renderSidebar();
   document.getElementById('pId').value = '';
   document.getElementById('pName').value = '';
@@ -988,17 +1063,103 @@ async function fetchRemoteModels() {
     if (!res.success) throw new Error(res.error || '拉取失败');
     const pid = syncCurrentFormToMemory();
     const existing = currentConfig.providers[pid].models || [];
-    const byId = new Map(existing.map(m => [m.id, m]));
-    const merged = res.models.map(m => ({ ...(byId.get(m.id) || {}), ...m }));
-    currentConfig.providers[pid].models = merged;
-    renderModels(merged);
-    renderSidebar();
-    setStatus(`成功拉取到 ${merged.length} 个模型！`, '#10B981');
+    const existingIds = new Set(existing.map(m => m.id));
+    // Initialize preview buffer; default-select items NOT already in the list
+    fetchedPreview = res.models.map(m => ({
+      id: m.id,
+      name: m.name || m.id,
+      selected: !existingIds.has(m.id),
+      added: existingIds.has(m.id),
+    }));
+    renderFetchPreview();
+    setStatus(`成功拉取到 ${res.models.length} 个模型，请在预览区勾选后点击「添加选中到列表」`, '#10B981');
   } catch (err) {
     alert('拉取模型失败: ' + err.message);
     setStatus('拉取模型失败: ' + err.message, '#EF4444');
   }
 }
+
+function renderFetchPreview() {
+  const wrap = document.getElementById('fetchPreviewContainer');
+  const list = document.getElementById('fetchPreviewList');
+  const summary = document.getElementById('fetchSummary');
+  if (!fetchedPreview || fetchedPreview.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'block';
+  list.innerHTML = '';
+  const selectedCount = fetchedPreview.filter(m => m.selected && !m.added).length;
+  const addedCount = fetchedPreview.filter(m => m.added).length;
+  summary.innerHTML = `共拉取 <b style="color:#fff;">${fetchedPreview.length}</b> 个模型 · 已选 <b style="color:var(--primary);">${selectedCount}</b> 个 · 已在列表中 <b style="color:var(--emerald);">${addedCount}</b> 个`;
+  fetchedPreview.forEach((m, idx) => {
+    const row = document.createElement('div');
+    row.className = 'fetch-row' + (m.added ? ' added' : '');
+    const safeId = String(m.id).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    const safeName = String(m.name).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    row.innerHTML = `
+      <input type="checkbox" class="checkbox" ${m.selected ? 'checked' : ''} ${m.added ? 'disabled' : ''}
+             onchange="fetchedPreview[${idx}].selected = this.checked; updateFetchSummary();">
+      <span class="model-id">${safeId}</span>
+      <input type="text" class="alias-input" value="${safeName}" placeholder="为该模型设置别名（可选）"
+             onchange="fetchedPreview[${idx}].name = this.value.trim() || fetchedPreview[${idx}].id">
+      ${m.added ? '<span class="status-badge">已在列表中</span>' : ''}
+    `;
+    list.appendChild(row);
+  });
+}
+
+function updateFetchSummary() {
+  const summary = document.getElementById('fetchSummary');
+  if (!summary || fetchedPreview.length === 0) return;
+  const selectedCount = fetchedPreview.filter(m => m.selected && !m.added).length;
+  const addedCount = fetchedPreview.filter(m => m.added).length;
+  summary.innerHTML = `共拉取 <b style="color:#fff;">${fetchedPreview.length}</b> 个模型 · 已选 <b style="color:var(--primary);">${selectedCount}</b> 个 · 已在列表中 <b style="color:var(--emerald);">${addedCount}</b> 个`;
+}
+
+function toggleAllFetched(value) {
+  if (!assertEditable()) return;
+  fetchedPreview.forEach(m => { if (!m.added) m.selected = value; });
+  renderFetchPreview();
+}
+
+function commitFetchedModels() {
+  if (!assertEditable()) return;
+  const pid = syncCurrentFormToMemory();
+  if (!pid) return alert('请先填写服务商 ID');
+  const p = currentConfig.providers[pid];
+  if (!p) return;
+  const list = (p.models || []).slice();
+  let addedCount = 0;
+  fetchedPreview.forEach(m => {
+    if (m.added) return;
+    if (!m.selected) return;
+    if (list.some(x => x.id === m.id)) return;
+    const next = { id: m.id };
+    // Apply alias if it's different from the id
+    const trimmed = String(m.name || '').trim();
+    if (trimmed && trimmed !== m.id) next.name = trimmed;
+    list.push(next);
+    m.added = true;
+    m.selected = false;
+    addedCount++;
+  });
+  p.models = list.sort((a, b) => a.id.localeCompare(b.id));
+  renderModels(p.models);
+  renderSidebar();
+  renderFetchPreview();
+  if (addedCount > 0) {
+    setStatus(`已将 ${addedCount} 个模型添加到 [${pid}] 列表。点击「💾 保存」即可持久化`, '#10B981');
+  } else {
+    setStatus('没有选中可添加的模型', '#F59E0B');
+  }
+}
+
+function closeFetchPreview() {
+  fetchedPreview = [];
+  document.getElementById('fetchPreviewContainer').style.display = 'none';
+}
+
 
 function deleteCurrentProvider() {
   if (!assertEditable()) return;

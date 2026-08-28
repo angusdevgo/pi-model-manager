@@ -2,6 +2,8 @@ import json
 import os
 import subprocess
 import threading
+import time
+import urllib.error
 import urllib.request
 import webview
 from pathlib import Path
@@ -437,6 +439,67 @@ def fetch_models(base_url, api_key):
             models.append({"id": str(mid), "name": str(name)})
     return sorted(models, key=lambda x: x["id"])
 
+
+def test_model(base_url, api_key, api_type, model_id):
+    """对单个模型发送最小化真实请求，验证 API 是否真正接通。
+    返回: {success, latency_ms, error?}
+    """
+    base = (base_url or "").rstrip("/")
+    if not base:
+        return {"success": False, "error": "Base URL 为空"}
+    start = time.time()
+    try:
+        if api_type == "anthropic-messages":
+            endpoint = base + "/messages" if base.endswith("/v1") else base + "/v1/messages"
+            headers = {"Content-Type": "application/json", "anthropic-version": "2023-06-01"}
+            if api_key:
+                headers["x-api-key"] = api_key
+            body = {"model": model_id, "max_tokens": 1, "messages": [{"role": "user", "content": "hi"}]}
+        elif api_type == "google-generative-ai":
+            gbase = base
+            if not gbase.endswith("/v1beta") and not gbase.endswith("/v1"):
+                gbase = gbase + "/v1beta"
+            endpoint = f"{gbase}/models/{model_id}:generateContent"
+            headers = {"Content-Type": "application/json"}
+            if api_key:
+                headers["x-goog-api-key"] = api_key
+            body = {"contents": [{"parts": [{"text": "hi"}]}]}
+        elif api_type == "openai-responses":
+            endpoint = base + "/responses" if base.endswith("/v1") else base + "/v1/responses"
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            body = {"model": model_id, "input": "hi", "max_output_tokens": 1}
+        else:  # openai-completions (默认)
+            endpoint = base + "/chat/completions" if base.endswith("/v1") else base + "/v1/chat/completions"
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            body = {"model": model_id, "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1}
+
+        data = json.dumps(body).encode("utf-8")
+        req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+        latency_ms = int((time.time() - start) * 1000)
+        return {"success": True, "latency_ms": latency_ms, "model": model_id}
+    except urllib.error.HTTPError as e:
+        latency_ms = int((time.time() - start) * 1000)
+        detail = ""
+        try:
+            err_body = e.read().decode("utf-8", errors="replace")
+            try:
+                parsed = json.loads(err_body)
+                detail = str(parsed.get("error", parsed))[:220]
+            except Exception:
+                detail = err_body[:220]
+        except Exception:
+            pass
+        return {"success": False, "status": e.code, "error": f"HTTP {e.code}: {detail}", "latency_ms": latency_ms}
+    except Exception as e:
+        latency_ms = int((time.time() - start) * 1000)
+        return {"success": False, "error": str(e)[:220], "latency_ms": latency_ms}
+
 class ApiBridge:
     def __init__(self):
         self._window = None
@@ -481,6 +544,12 @@ class ApiBridge:
         try:
             models = fetch_models(base_url, api_key)
             return {"success": True, "models": models}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def test_model(self, base_url, api_key, api_type, model_id):
+        try:
+            return test_model(base_url, api_key, api_type, model_id)
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -647,6 +716,8 @@ HTML_CONTENT = """<!DOCTYPE html>
   .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35); border-color: rgba(255, 255, 255, 0.25); }
   .btn-emerald { background: linear-gradient(135deg, #10B981, #059669); color: white; }
   .btn-emerald:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35); border-color: rgba(255, 255, 255, 0.25); }
+  .btn-indigo { background: linear-gradient(135deg, #818CF8, #6366F1); color: white; }
+  .btn-indigo:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35); border-color: rgba(255, 255, 255, 0.25); }
   .btn-rose { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; }
   .btn-rose:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35); }
   .btn-secondary { background: rgba(71, 85, 105, 0.6); color: white; border: 1px solid var(--glass-border); }
@@ -686,6 +757,11 @@ HTML_CONTENT = """<!DOCTYPE html>
   .model-tag .alias-id { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 11px; color: #94A3B8; flex-shrink: 0; background: rgba(11, 17, 32, 0.35); padding: 1px 6px; border-radius: 4px; }
   .model-tag .del-btn { cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 0 3px; border-radius: 4px; flex-shrink: 0; transition: all 0.15s; }
   .model-tag .del-btn:hover { color: #fff; background: rgba(244, 63, 94, 0.35); }
+  .model-tag .test-btn, .fetch-row .test-btn { cursor: pointer; font-size: 13px; flex-shrink: 0; padding: 1px 4px; border-radius: 5px; opacity: 0.75; transition: all 0.15s; user-select: none; }
+  .model-tag .test-btn:hover, .fetch-row .test-btn:hover { opacity: 1; background: rgba(96, 165, 250, 0.2); transform: scale(1.12); }
+  .model-tag .test-btn.testing, .fetch-row .test-btn.testing { opacity: 0.6; }
+  .model-tag .test-btn.ok, .fetch-row .test-btn.ok { color: #34D399; opacity: 1; background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.35); }
+  .model-tag .test-btn.fail, .fetch-row .test-btn.fail { color: #F87171; opacity: 1; background: rgba(244, 63, 94, 0.18); border: 1px solid rgba(244, 63, 94, 0.35); }
 
   .fetch-preview-container { display: none; margin-top: 14px; padding: 14px; background: linear-gradient(135deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.65)); border-radius: 11px; border: 1px solid rgba(96, 165, 250, 0.4); box-shadow: 0 0 20px rgba(96, 165, 250, 0.1); }
   .fetch-preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; flex-wrap: wrap; }
@@ -795,6 +871,7 @@ HTML_CONTENT = """<!DOCTYPE html>
           <span class="title">📥 拉取结果预览 — 勾选后点击「添加选中」才写入列表，可先设置别名</span>
           <div class="actions">
             <button class="btn btn-emerald edit-action" onclick="commitFetchedModels()">✅ 添加选中到列表</button>
+            <button class="btn btn-indigo edit-action" onclick="testAllFetched()">⚡ 全部测活</button>
             <button class="btn edit-action" onclick="toggleAllFetched(true)">☑ 全选</button>
             <button class="btn edit-action" onclick="toggleAllFetched(false)">☐ 全不选</button>
             <button class="btn edit-action" onclick="closeFetchPreview()">✕ 关闭</button>
@@ -947,6 +1024,7 @@ function renderModels(models) {
              title="点击直接修改别名，回车或失焦自动保存"
              onchange="updateModelAlias('${safeId}', this.value)">
       <span class="alias-id">${safeId}</span>
+      <span class="test-btn" onclick="testModel(this, '${safeId}')" title="测活：发送最小请求验证该模型 API 是否接通">⚡</span>
       <span class="del-btn" onclick="removeModel('${safeId}')" title="删除该模型">✕</span>
     `;
     container.appendChild(tag);
@@ -1104,6 +1182,7 @@ function renderFetchPreview() {
       <span class="model-id">${safeId}</span>
       <input type="text" class="alias-input" value="${safeName}" placeholder="为该模型设置别名（可选）"
              onchange="fetchedPreview[${idx}].name = this.value.trim() || fetchedPreview[${idx}].id">
+      <span class="test-btn" onclick="testModel(this, '${safeId}')" title="测活：验证该模型 API 是否接通">⚡</span>
       ${m.added ? '<span class="status-badge">已在列表中</span>' : ''}
     `;
     list.appendChild(row);
@@ -1154,6 +1233,80 @@ function commitFetchedModels() {
   } else {
     setStatus('没有选中可添加的模型，请先勾选', '#F59E0B');
   }
+}
+
+function currentTestContext() {
+  return {
+    baseUrl: document.getElementById('pBaseUrl').value.trim(),
+    apiKey: document.getElementById('pApiKey').value.trim(),
+    api: document.getElementById('pApi').value || 'openai-completions',
+  };
+}
+
+async function testModel(btn, mid) {
+  if (!assertEditable()) return;
+  const ctx = currentTestContext();
+  if (!ctx.baseUrl) return alert('请先填写 Base URL');
+  btn.classList.add('testing');
+  btn.classList.remove('ok', 'fail');
+  btn.innerHTML = '⏳';
+  btn.title = '正在检测...';
+  try {
+    const res = await window.pywebview.api.test_model(ctx.baseUrl, ctx.apiKey, ctx.api, mid);
+    if (res.success) {
+      btn.classList.add('ok');
+      btn.innerHTML = '✓';
+      btn.title = `可用 · ${res.latency_ms}ms`;
+      setStatus(`✅ [${mid}] 测活成功 · ${res.latency_ms}ms`, '#10B981');
+    } else {
+      btn.classList.add('fail');
+      btn.innerHTML = '✗';
+      btn.title = `失败: ${res.error || '未知错误'}`;
+      setStatus(`❌ [${mid}] 测活失败: ${res.error || '未知错误'}`, '#EF4444');
+    }
+  } catch (e) {
+    btn.classList.add('fail');
+    btn.innerHTML = '✗';
+    btn.title = '检测异常';
+    setStatus(`❌ [${mid}] 测活异常`, '#EF4444');
+  }
+  setTimeout(() => btn.classList.remove('testing'), 300);
+}
+
+async function testAllFetched() {
+  if (!assertEditable()) return;
+  if (!fetchedPreview || fetchedPreview.length === 0) return;
+  const ctx = currentTestContext();
+  if (!ctx.baseUrl) return alert('请先填写 Base URL');
+  setStatus(`正在批量测活 ${fetchedPreview.length} 个模型...`, '#F59E0B');
+  let okCount = 0, failCount = 0;
+  for (let i = 0; i < fetchedPreview.length; i++) {
+    const btn = document.querySelectorAll('#fetchPreviewList .test-btn')[i];
+    if (!btn) continue;
+    btn.classList.add('testing');
+    btn.classList.remove('ok', 'fail');
+    btn.innerHTML = '⏳';
+    try {
+      const res = await window.pywebview.api.test_model(ctx.baseUrl, ctx.apiKey, ctx.api, fetchedPreview[i].id);
+      if (res.success) {
+        btn.classList.add('ok');
+        btn.innerHTML = '✓';
+        btn.title = `可用 · ${res.latency_ms}ms`;
+        okCount++;
+      } else {
+        btn.classList.add('fail');
+        btn.innerHTML = '✗';
+        btn.title = `失败: ${res.error || '未知错误'}`;
+        failCount++;
+      }
+    } catch (e) {
+      btn.classList.add('fail');
+      btn.innerHTML = '✗';
+      failCount++;
+    }
+    btn.classList.remove('testing');
+  }
+  setStatus(`批量测活完成：${okCount} 个可用，${failCount} 个失败`, failCount > 0 ? (okCount > 0 ? '#F59E0B' : '#EF4444') : '#10B981');
 }
 
 function closeFetchPreview() {

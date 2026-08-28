@@ -11,10 +11,6 @@
   <img src="https://img.shields.io/badge/License-MIT-green.svg?style=flat-square" alt="License">
 </p>
 
-<p align="center">
-  <img src="preview_v4.png" alt="Pi Model Manager Screenshot" width="850">
-</p>
-
 ---
 
 <a id="-中文说明"></a>

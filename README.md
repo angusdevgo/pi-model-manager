@@ -31,19 +31,24 @@
 
 ### ✨ 核心功能特性
 
-*   🖥️ **原生桌面客户端**：纯本地运行，采用现代磨砂玻璃/无边框设计风格，体验丝滑（无需开启本地网页服务器或打开浏览器）。
+*   🖥️ **现代暗黑工业风三栏工作台**：纯本地运行，采用精致高对比暗黑美学（三栏布局：服务商列表、连接参数卡片、模型工作区），体验丝滑（无需开启本地网页服务器或打开浏览器）。
 *   📦 **服务商管理 (CRUD)**：
-    *   可视化新增、编辑、删除模型服务商。
+    *   可视化新增、编辑、保存、删除服务商。
+    *   **查看 / 编辑模式**：支持工业数据查看模式与解锁编辑表单切换，防止误触。
     *   **实时搜索过滤**：支持在左侧列表按 ID 或名称快速筛选服务商。
     *   **彩色协议徽章**：清晰标明 `OpenAI`、`Claude`、`Gemini`、`Resp` 等协议类型。
     *   **API Key 明文切换**：支持 `👁️ / 🙈` 一键显隐密码，方便核对密钥。
+    *   **TXT 文本导出**：支持一键导出当前服务商或全部服务商的显示名称、Base URL、Key 与模型列表到桌面 TXT。
 *   🤖 **模型管理与别名**：
+    *   **分段 Tab 视图**：支持在「📋 已配置模型」与「📥 拉取预览」之间无缝切换，彻底解决内容遮挡。
     *   **📥 缓冲式拉取预览**：点击「自动拉取模型」后进入预览面板，不会直接覆盖列表，可勾选目标模型后批量导入。
     *   **✏️ 随时修改别名**：拉取预览时、手动添加时、以及已在列表中的模型，均可**直接点击编辑别名**，回车或失焦自动保存。
     *   **🔍 模型实时过滤**：已添加列表和拉取预览区均支持实时关键词过滤。
 *   ⚡ **模型测活 (Connectivity Test)**：
     *   **单模型测活**：每个模型标签右侧均有 ⚡ 按钮，发送最小化请求真实验证 API 是否通畅。
     *   **批量测活**：拉取预览区支持「⚡ 全部测活」，一键并发检测所有拉取模型的连通性与响应耗时。
+    *   **全服务商轮询**：模型列表标题旁新增「⚡ 全部测活」按钮，一键依次测活当前服务商全部模型，并在标题下显示 ✓/✗ 健康状态统计。
+    *   **⏱ 定时自动测活与自动禁用**：支持下拉选择 `1分钟 / 5分钟 / 15分钟 / 30分钟 / 1小时` 定时轮询，支持配置**连续失败阈值自动禁用不可用模型**，并提供手动 🔒/🔓 启用/禁用切换。
     *   **直观状态指示**：成功显示绿色 ✓ 及毫秒耗时（如 `可用 · 185ms`），失败显示红色 ✗ 及具体 HTTP 状态码/错误原因。
 *   🔄 **热更新与同步 (Live Sync)**：搭配配套 Pi 扩展，在保存配置后自动热更新当前正在运行的 Pi 终端模型列表，**无需重启，也无需执行 `/reload`**。
 *   ⌨️ **快捷键支持**：支持全局 <kbd>Ctrl + S</kbd> 一键保存配置。
@@ -114,19 +119,24 @@ Adding custom model providers (e.g., local **Ollama**, **LM Studio**, or remote 
 
 ### ✨ Features
 
-*   🖥️ **Native Desktop GUI**: Built using `pywebview`, providing a modern frosted-glass dark theme interface without starting local servers.
+*   🖥️ **Modern Dark Industrial 3-Column Workbench**: Sleek high-contrast dark aesthetic with dedicated panes for provider navigation, connection details, and model management.
 *   📦 **Provider Management (CRUD)**:
-    *   Visually add, edit, or delete custom providers.
+    *   Visually add, edit, save, or delete custom providers.
+    *   **View / Edit Modes**: Toggle between compact industrial data view and unlocked edit forms to prevent accidental edits.
     *   **Live Search**: Filter providers in real-time by ID or display name.
     *   **Protocol Badges**: Clear badges for `OpenAI`, `Claude`, `Gemini`, `Resp` protocols.
     *   **Password Toggle**: Show/hide API keys with `👁️ / 🙈`.
+    *   **TXT Export**: Export single or all provider credentials (Name, Base URL, API Key, Models) directly to Desktop TXT.
 *   🤖 **Model Management & Custom Aliases**:
+    *   **Tabbed Views**: Seamlessly switch between configured models and remote fetch staging without UI clipping.
     *   **📥 Buffered Fetching**: Models fetched via `/v1/models` enter a staging preview pane, allowing you to select and configure aliases before importing.
     *   **✏️ Inline Alias Editing**: Directly edit display names/aliases anywhere (in the staged preview, on manual add, or on existing tags) with auto-save on blur/Enter.
     *   **🔍 Instant Filter**: Filter added models or fetched preview items by keyword.
 *   ⚡ **Model Connectivity Testing (Health Check)**:
     *   **Single Model Test**: Click the ⚡ button next to any model to send a minimal payload and verify endpoint connectivity.
     *   **Batch Test**: Run "⚡ Test All" in the preview pane to check all fetched models concurrently.
+    *   **Per-Provider Full Sweep**: A "⚡ Test All" button sequentially tests every model of the current provider and renders an inline ✓/✗ health summary.
+    *   **⏱ Scheduled Health Checks & Auto-Disable**: Choose intervals like `1min / 5min / 15min / 30min / 1h` with optional **auto-disabling of models upon reaching consecutive failure thresholds**, plus manual 🔒/🔓 toggles.
     *   **Live Status**: Displays response latency in milliseconds (e.g., `Available · 185ms`) or detailed HTTP error codes upon failure.
 *   🔄 **Zero-Restart Sync (Live Sync)**: Automatically hot-updates models in your active Pi session on save using a background file watcher.
 *   ⌨️ **Keyboard Shortcut**: Press <kbd>Ctrl + S</kbd> anywhere in the window to save configuration.
